@@ -24,7 +24,7 @@ ip-cidr-reservation reserve "vnet2" "/24" ./pool.json
 ```json
 {
   "pool": "10.0.0.0/10",
-  "reserved: [
+  "reserved": [
     {
       "key": "vnet1",
       "pool": "10.0.0.0/24"
