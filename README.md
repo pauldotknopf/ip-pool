@@ -1,7 +1,6 @@
 # ip-cidr-reservation
-A CLI tool that helps you manage and reserve IP CIDRs.
 
-Consider the following scenario:
+(brainstorming) A CLI tool that helps you manage and reserve IP CIDRs.
 
 **Pseudo code:**
 
@@ -40,5 +39,7 @@ ip-cidr-reservation reserve "vnet2" "/24" ./pool.json
 You can check the ```./pool.json``` file into your repository, and other people can request a new range of IPs from the pool, without conflicing with any other already-reserved masks.
 
 We'd have to make sure that the addresses don't become fragmented.
+
+We'd use a [prefix-trie algorithm](https://d34dl0ck.me/rust-bites-cidr-trie/index.html) to determine the next available address pool.
 
 Optionally, we could provide a method to "unfragment" your pool, which would give you a detailed list of what reservations will have to change. I doub't people would ever need this (how big is you fuckin network?!)
