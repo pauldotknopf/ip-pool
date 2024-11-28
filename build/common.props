@@ -1,0 +1,11 @@
+<Project>
+    <Import Project="version.props" />
+    <PropertyGroup>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Authors>pauldotknopf</Authors>
+        <PackageDescription>A tool for managing/reserving CIDR blocks</PackageDescription>
+        <Summary>A tool for managing/reserving CIDR blocks</Summary>
+        <RepositoryUrl>https://github.com/pauldotknopf/ip-pool</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/pauldotknopf/ip-pool</PackageProjectUrl>
+    </PropertyGroup>
+</Project>

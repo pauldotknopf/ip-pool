@@ -1,5 +1,4 @@
 ﻿using System.CommandLine;
-using System.Net;
 using System.Text.Json;
 using IpPool.Lib;
 
