@@ -6,6 +6,7 @@ A tool to manage/reserve IP (CIDR notated) from an address space (pool).
 
 ```bash
 dotnet tool install -g IpPool
+dotnet tool update -g IpPool
 ```
 
 # Usage
