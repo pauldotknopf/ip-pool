@@ -14,6 +14,8 @@ public class TrieNode
     
     public TrieNode Parent { get; set; }
     
+    public string Key { get; set; }
+    
     public bool IsReserved { get; set; } = false;
     
     public Dictionary<byte, TrieNode> Children { get; set; } = new();

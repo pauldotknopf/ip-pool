@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.VisualBasic;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 
@@ -24,14 +25,93 @@ public class CidrTrie
         _rootIp = rootIp;
         _root = new TrieNode(0, 32 - _rootIp.PrefixSize.Value);
     }
+
+    public static CidrTrie FromState(CidrState state)
+    {
+        var trie = new CidrTrie(new IpAddr(state.Pool));
+        
+        if (state.Reserved != null)
+        {
+            foreach (var reserved in state.Reserved)
+            {
+                trie.AllocateCidr(new IpAddr(reserved.Value), reserved.Key);
+            }
+        }
+        
+        return trie;
+    }
     
-    public IpAddr AllocateCidr(int size)
+    public IpAddr AllocateCidr(IpAddr ip, string key)
+    {
+        if (!ip.PrefixSize.HasValue)
+        {
+            throw new BusinessException($"prefix size is required: {ip}");
+        }
+        if(ip.PrefixSize.Value < _rootIp.PrefixSize.Value)
+        {
+            throw new BusinessException($"prefix size is too small: {ip}");
+        }
+        
+        // Ensure the ip.Value prefix matches the prefix of _rootIp
+        uint mask = uint.MaxValue << (32 - _rootIp.PrefixSize.Value);
+        if ((ip.Value & mask) != (_rootIp.Value & mask))
+        {
+            throw new BusinessException($"IP prefix does not match the root IP prefix: {ip}");
+        }
+
+        var bitsToWalk = ip.PrefixSize - _rootIp.PrefixSize;
+        
+        var currentNode = _root;
+
+        for (int i = 0; i < bitsToWalk; i++)
+        {
+            if (currentNode.IsReserved)
+            {
+                throw new Exception("already reserved");
+            }
+            uint bit = (ip.Value >> (31 - (_rootIp.PrefixSize.Value + i))) & 1;
+            if (!currentNode.Children.ContainsKey((byte)bit))
+            {
+                currentNode.Children[(byte)bit] = new TrieNode((byte)bit, currentNode.MaskSize - 1)
+                {
+                    Parent = currentNode
+                };
+            }
+            currentNode = currentNode.Children[(byte)bit];
+        }
+
+        var t = DebugOutput();
+
+        void MakeSureNoChildrenAreReserved(TrieNode node)
+        {
+            if (node.IsReserved)
+            {
+                throw new BusinessException($"the requested reservation {ip} conflicts with {ToIp(node)}");
+            }
+            
+            foreach (var child in node.Children)
+            {
+                MakeSureNoChildrenAreReserved(child.Value);
+            }
+        }
+
+        MakeSureNoChildrenAreReserved(currentNode);
+        
+        currentNode.IsReserved = true;
+        currentNode.Key = key;
+
+        return ToIp(currentNode);
+    }
+    
+    public IpAddr AllocateCidr(int size, string key)
     {
         if (size > (32 - _rootIp.PrefixSize))
         {
             throw new BusinessException("requested size is too big");
         }
 
+        key = EnsureValidKey(key);
+        
         TrieNode Walk(TrieNode node)
         {
             if (node.IsReserved)
@@ -80,46 +160,110 @@ public class CidrTrie
         if (found != null)
         {
             found.IsReserved = true;
-            var current = found;
-            var bits = new List<byte>();
-            while (current != null && current.Parent != null)
-            {
-                bits.Add(current.Bit);
-                current = current.Parent;
-            }
-
-            uint reservedIp = 0;
-            for (var x = bits.Count - 1; x >= 0; x--)
-            {
-                reservedIp = (reservedIp << 1) | bits[x];
-            }
-
-            var t = Convert.ToString(reservedIp, 2).PadLeft(32, '0');
-            Console.WriteLine(Convert.ToString(reservedIp, 2).PadLeft(32, '0'));
-            
-            reservedIp <<= ((32 - _rootIp.PrefixSize.Value) - bits.Count);
-            t = Convert.ToString(reservedIp, 2).PadLeft(32, '0');
-            Console.WriteLine(t);
-            return new IpAddr(_rootIp.Value | reservedIp, 32 - size);
+            found.Key = key;
+            return ToIp(found);
         }
 
         throw new InvalidOperationException();
     }
-    
-    private UInt32 BitReverse(UInt32 value)
-    {
-        UInt32 left = (UInt32)1 << 31;
-        UInt32 right = 1;
-        UInt32 result = 0;
 
-        for (int i = 31; i >= 1; i -= 2)
+    private string EnsureValidKey(string key)
+    {
+        if (string.IsNullOrEmpty(key))
         {
-            result |= (value & left) >> i;
-            result |= (value & right) << i;
-            left >>= 1;
-            right <<= 1;
+            throw new BusinessException("key is required");
         }
-        return result;
+
+        key = key.ToLower().Trim();
+
+        string Walk(TrieNode node)
+        {
+            if (string.IsNullOrEmpty(node.Key))
+            {
+                foreach (var child in node.Children)
+                {
+                    var result = Walk(child.Value);
+                    if (result != null)
+                    {
+                        return result;
+                    }
+                }
+
+                return null;
+            }
+            
+            if (node.Key.ToLower().Trim() == key)
+            {
+                return node.Key;
+            }
+            
+            foreach (var child in node.Children)
+            {
+                var result = Walk(child.Value);
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+
+            return null;
+        }
+
+        var existing = Walk(_root);
+
+        if (!string.IsNullOrEmpty(existing))
+        {
+            throw new BusinessException($"the key {key} is already in use");
+        }
+
+        return key;
+    }
+
+    private IpAddr ToIp(TrieNode node)
+    {
+        var current = node;
+        var bits = new List<byte>();
+        while (current != null && current.Parent != null)
+        {
+            bits.Add(current.Bit);
+            current = current.Parent;
+        }
+
+        uint reservedIp = 0;
+        for (var x = bits.Count - 1; x >= 0; x--)
+        {
+            reservedIp = (reservedIp << 1) | bits[x];
+        }
+
+        reservedIp <<= ((32 - _rootIp.PrefixSize.Value) - bits.Count);
+            
+        return new IpAddr(_rootIp.Value | reservedIp, 32 - node.MaskSize);
+    }
+
+    public CidrState GetState()
+    {
+        var state = new CidrState
+        {
+            Pool = _rootIp.ToString(),
+            Reserved = new Dictionary<string, string>()
+        };
+
+        void Walk(TrieNode node)
+        {
+            if (node.IsReserved)
+            {
+                state.Reserved.Add(node.Key, ToIp(node).ToString());
+            }
+
+            foreach (var child in node.Children)
+            {
+                Walk(child.Value);
+            }
+        }
+
+        Walk(_root);
+
+        return state;
     }
 
     public string DebugOutput()
