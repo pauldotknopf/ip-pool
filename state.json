@@ -1,0 +1,7 @@
+{
+  "Pool": "127.0.0.0/8",
+  "Reserved": {
+    "app-services-subnet": "127.1.0.0/24",
+    "private-endpoint-subnet": "127.0.0.0/24"
+  }
+}

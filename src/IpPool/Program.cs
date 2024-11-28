@@ -12,7 +12,8 @@ public class Program
         }
         File.WriteAllText(stateFile, JsonSerializer.Serialize(state, new JsonSerializerOptions
         {
-            WriteIndented = true
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         }));
     }
 

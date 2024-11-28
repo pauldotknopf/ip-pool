@@ -1,45 +1,31 @@
-# ip-cidr-reservation
+# IpPool
 
-(brainstorming) A CLI tool that helps you manage and reserve IP CIDRs.
+A tool to manage/reserve IP (CIDR notated) from an address space (pool).
 
-**Pseudo code:**
-
-```
-var pool = new Pool("10.0.0.0/10");
-var vnet1 = pool.Reserve(8) // bits to reserve, 256 IP addresses
-var vnet2 = pool.Reserve(10) // bits to reserve, 1024 IP addresses.
-```
-
-For git-ops scenarios, you'd like the reservations stored in a state file.
+# Installation
 
 ```bash
-ip-cidr-reservation create-pool "10.0.0.0/10" ./pool.json
-ip-cidr-reservation reserve "vnet1" "/24" ./pool.json
-ip-cidr-reservation reserve "vnet2" "/24" ./pool.json
+dotnet tool install -g IpPool
 ```
 
-**./pool.json**
+# Usage
+
+```bash
+> ip-pool create-pool --state-file state.json --pool 127.0.0.1/8
+> ip-pool reserve-ip --state-file state.json --pool 127.1.0.0/24 --key app-services-subnet
+reserved: 127.1.0.0/24
+> ip-pool reserve-size --state-file state.json --size 8 --key private-endpoint-subnet
+reserved: 127.0.0.0/24
+```
+
+**```state.json```**
 
 ```json
 {
-  "pool": "10.0.0.0/10",
-  "reserved": [
-    {
-      "key": "vnet1",
-      "pool": "10.0.0.0/24"
-    },
-    {
-      "key": "vnet2",
-      "pool": "10.0.1.0/24"
-    }
-  ]
+  "pool": "127.0.0.0/8",
+  "reserved": {
+    "app-services-subnet": "127.1.0.0/24",
+    "private-endpoint-subnet": "127.0.0.0/24"
+  }
 }
 ```
-
-You can check the ```./pool.json``` file into your repository, and other people can request a new range of IPs from the pool, without conflicing with any other already-reserved masks.
-
-We'd have to make sure that the addresses don't become fragmented.
-
-We'd use a [prefix-trie algorithm](https://d34dl0ck.me/rust-bites-cidr-trie/index.html) to determine the next available address pool.
-
-Optionally, we could provide a method to "unfragment" your pool, which would give you a detailed list of what reservations will have to change. I doub't people would ever need this (how big is you fuckin network?!)
