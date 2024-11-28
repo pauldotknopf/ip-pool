@@ -39,7 +39,11 @@ public class Program
             throw new BusinessException($"state file {stateFile} doesn't exist");
         }
 
-        var state = JsonSerializer.Deserialize<CidrState>(File.ReadAllText(stateFile));
+        var state = JsonSerializer.Deserialize<CidrState>(File.ReadAllText(stateFile),
+            new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
         return CidrTrie.FromState(state);
     }
     
