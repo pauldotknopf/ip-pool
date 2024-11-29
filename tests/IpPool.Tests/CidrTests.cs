@@ -251,4 +251,17 @@ public class CidrTests
         state.Reserved.Should().ContainKey("test1").WhoseValue.Should().Be(ip1.ToString());
         state.Reserved.Should().ContainKey("test2").WhoseValue.Should().Be(ip2.ToString());
     }
+
+    [TestMethod]
+    public void CanAllocateEverything()
+    {
+        var cidr = new CidrTrie(new IpAddr("127.0.0.0/24"));
+        for (int x = 0; x < 16; x++)
+        {
+            var ip = cidr.AllocateCidr(4, $"test{x}");
+        }
+
+        var message = Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr(4, "sdf"));
+        message.Message.Should().Be("couldn't find a suitable CIDR block");
+    }
 }

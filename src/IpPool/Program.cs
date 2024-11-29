@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.Text;
 using System.Text.Json;
 using IpPool.Lib;
 
@@ -152,6 +153,39 @@ public class Program
                 }
             }, stateFileLocation, ip, key);
             rootCommand.Add(reserveIpCommand);
+        }
+        
+        {
+            var generateTfCommand = new Command("generate-tf");
+            generateTfCommand.AddOption(stateFileLocation);
+            generateTfCommand.SetHandler(stateFileValue =>
+            {
+                try
+                {
+                    var pool = LoadState(stateFileValue).GetState();
+                    
+                    var tfFile = Path.ChangeExtension(stateFileValue, ".tf");
+                    if (Path.Exists(tfFile))
+                    {
+                        File.Delete(tfFile);
+                    }
+
+                    var builder = new StringBuilder();
+                    builder.AppendLine("locals {");
+                    foreach (var reserved in pool.Reserved)
+                    {
+                        builder.AppendLine($"\t{reserved.Key} = \"{reserved.Value}\"");
+                    }
+                    builder.AppendLine("}");
+
+                    File.WriteAllText(tfFile, builder.ToString());
+                }
+                catch (Exception ex)
+                {
+                    PrintException(ex);
+                }
+            }, stateFileLocation);
+            rootCommand.Add(generateTfCommand);
         }
         
         await rootCommand.InvokeAsync(args);

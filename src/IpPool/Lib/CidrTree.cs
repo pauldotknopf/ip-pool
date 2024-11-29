@@ -164,7 +164,7 @@ public class CidrTrie
             return ToIp(found);
         }
 
-        throw new InvalidOperationException();
+        throw new BusinessException("couldn't find a suitable CIDR block");
     }
 
     private string EnsureValidKey(string key)
