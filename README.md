@@ -30,3 +30,14 @@ reserved: 127.0.0.0/24
   }
 }
 ```
+
+You can also optionally generate a ```.tf``` file, which makes integration into Terraform a lot easier.
+
+**```state.tf```**
+
+```terraform
+locals {
+	app-services-subnet = "127.1.0.0/24"
+	private-endpoint-subnet = "127.0.0.0/24"
+}
+```
