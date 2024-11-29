@@ -1,6 +1,6 @@
 # IpPool
 
-A tool to manage/reserve IP (CIDR notated) from an address space (pool).
+A tool to manage/reserve IPs (CIDR notated) from an address space (pool).
 
 # Installation
 
