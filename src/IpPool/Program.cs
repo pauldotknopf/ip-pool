@@ -156,9 +156,16 @@ public class Program
         }
         
         {
+            var prefix = new Option<string>
+                (name: "--prefix",
+                description: "the prefix to add to all the local variables")
+            {
+                IsRequired = true
+            };
+            
             var generateTfCommand = new Command("generate-tf");
             generateTfCommand.AddOption(stateFileLocation);
-            generateTfCommand.SetHandler(stateFileValue =>
+            generateTfCommand.SetHandler((stateFileValue, prefixValue) =>
             {
                 try
                 {
@@ -174,7 +181,12 @@ public class Program
                     builder.AppendLine("locals {");
                     foreach (var reserved in pool.Reserved)
                     {
-                        builder.AppendLine($"\t{reserved.Key} = \"{reserved.Value}\"");
+                        var key = reserved.Key;
+                        if (!string.IsNullOrEmpty(prefixValue))
+                        {
+                            key = $"{prefixValue}{key}";
+                        }
+                        builder.AppendLine($"\t{key} = \"{reserved.Value}\"");
                     }
                     builder.AppendLine("}");
 
@@ -184,7 +196,7 @@ public class Program
                 {
                     PrintException(ex);
                 }
-            }, stateFileLocation);
+            }, stateFileLocation, prefix);
             rootCommand.Add(generateTfCommand);
         }
         
