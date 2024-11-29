@@ -33,6 +33,10 @@ reserved: 127.0.0.0/24
 
 You can also optionally generate a ```.tf``` file, which makes integration into Terraform a lot easier.
 
+```bash
+ip-pool generate-tf --state-file state.json
+```
+
 **```state.tf```**
 
 ```terraform
