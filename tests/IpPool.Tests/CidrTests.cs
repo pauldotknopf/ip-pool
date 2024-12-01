@@ -13,23 +13,23 @@ public class CidrTests
     public void CantAddDuplicateKeys()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/24"));
-        cidr.AllocateCidr(1, "Test1");
-        Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr(1, "test1"));
-        cidr.AllocateCidr(1, "test2");
+        cidr.AllocateCidr("Test1", 1);
+        Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr("test1", 1));
+        cidr.AllocateCidr("test2", 1);
     }
     
     [TestMethod]
     public void CantAllocateToLargeOfPool()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/24"));
-        Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr(9, "test1"));
+        Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr("test1", 9));
     }
     
     [TestMethod]
     public void CanAllocateExactSizeFromPool()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/24"));
-        var ip = cidr.AllocateCidr(8, "test1");
+        var ip = cidr.AllocateCidr("test1", 8);
         ip.ToString().Should().Be("127.0.0.0/24");
     }
     
@@ -37,7 +37,7 @@ public class CidrTests
     public void CanAllocateSmallerSizeFromPool()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/24"));
-        var ip = cidr.AllocateCidr(7, "test1");
+        var ip = cidr.AllocateCidr("test1", 7);
         ip.ToString().Should().Be("127.0.0.0/25");
     }
     
@@ -46,10 +46,10 @@ public class CidrTests
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/30"));
         TestContext.WriteLine(cidr.DebugOutput());
-        var ip = cidr.AllocateCidr(1, "test1");
+        var ip = cidr.AllocateCidr("test1", 1);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.0/31");
-        ip = cidr.AllocateCidr(1, "test2");
+        ip = cidr.AllocateCidr("test2", 1);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.2/31");
     }
@@ -58,9 +58,9 @@ public class CidrTests
     public void CanAllocateTwoHalfsFromThePool_29()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/29"));
-        var ip = cidr.AllocateCidr(2, "test1");
+        var ip = cidr.AllocateCidr("test1", 2);
         ip.ToString().Should().Be("127.0.0.0/30");
-        ip = cidr.AllocateCidr(2, "test2");
+        ip = cidr.AllocateCidr("test2", 2);
         ip.ToString().Should().Be("127.0.0.4/30");
     }
     
@@ -68,9 +68,9 @@ public class CidrTests
     public void CanAllocateTwoHalfsFromThePool_8()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/8"));
-        var ip = cidr.AllocateCidr(23, "test1");
+        var ip = cidr.AllocateCidr("test1", 23);
         ip.ToString().Should().Be("127.0.0.0/9");
-        ip = cidr.AllocateCidr(23, "test2");
+        ip = cidr.AllocateCidr("test2", 23);
         ip.ToString().Should().Be("127.128.0.0/9");
     }
     
@@ -79,16 +79,16 @@ public class CidrTests
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/29"));
         TestContext.WriteLine(cidr.DebugOutput());
-        var ip = cidr.AllocateCidr(1, "test1");
+        var ip = cidr.AllocateCidr("test1", 1);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.0/31");
-        ip = cidr.AllocateCidr(1, "test2");
+        ip = cidr.AllocateCidr("test2", 1);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.2/31");
-        ip = cidr.AllocateCidr(1, "test3");
+        ip = cidr.AllocateCidr("test3", 1);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.4/31");
-        ip = cidr.AllocateCidr(1, "test4");
+        ip = cidr.AllocateCidr("test4", 1);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.6/31");
     }
@@ -98,16 +98,16 @@ public class CidrTests
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/28"));
         TestContext.WriteLine(cidr.DebugOutput());
-        var ip = cidr.AllocateCidr(2, "test1");
+        var ip = cidr.AllocateCidr("test1", 2);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.0/30");
-        ip = cidr.AllocateCidr(2, "test2");
+        ip = cidr.AllocateCidr("test2", 2);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.4/30");
-        ip = cidr.AllocateCidr(2, "test3");
+        ip = cidr.AllocateCidr("test3", 2);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.8/30");
-        ip = cidr.AllocateCidr(2, "test4");
+        ip = cidr.AllocateCidr("test4", 2);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.12/30");
     }
@@ -117,28 +117,28 @@ public class CidrTests
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/28"));
         TestContext.WriteLine(cidr.DebugOutput());
-        var ip = cidr.AllocateCidr(1, "test1");
+        var ip = cidr.AllocateCidr("test1", 1);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.0/31");
-        ip = cidr.AllocateCidr(1, "test2");
+        ip = cidr.AllocateCidr("test2", 1);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.2/31");
-        ip = cidr.AllocateCidr(1, "test3");
+        ip = cidr.AllocateCidr("test3", 1);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.4/31");
-        ip = cidr.AllocateCidr(1, "test4");
+        ip = cidr.AllocateCidr("test4", 1);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.6/31");
-        ip = cidr.AllocateCidr(1, "test5");
+        ip = cidr.AllocateCidr("test5", 1);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.8/31");
-        ip = cidr.AllocateCidr(1, "test6");
+        ip = cidr.AllocateCidr("test6", 1);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.10/31");
-        ip = cidr.AllocateCidr(1, "test7");
+        ip = cidr.AllocateCidr("test7", 1);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.12/31");
-        ip = cidr.AllocateCidr(1, "test8");
+        ip = cidr.AllocateCidr("test8", 1);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.14/31");
     }
@@ -147,13 +147,13 @@ public class CidrTests
     public void CanAllocateThreeSubnets()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/8"));
-        var ip = cidr.AllocateCidr(23, "test1");
+        var ip = cidr.AllocateCidr("test1", 23);
         //TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.0.0.0/9");
-        ip = cidr.AllocateCidr(22, "test2");
+        ip = cidr.AllocateCidr("test2", 22);
         //TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.128.0.0/10");
-        ip = cidr.AllocateCidr(22, "test3");
+        ip = cidr.AllocateCidr("test3", 22);
         TestContext.WriteLine(cidr.DebugOutput());
         ip.ToString().Should().Be("127.192.0.0/10");
     }
@@ -162,7 +162,7 @@ public class CidrTests
     public void CantAllocateIpWithSmallerPrefix()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/8"));
-        var message = Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr(new IpAddr("127.0.0.0/7"), "test"));
+        var message = Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr("test", new IpAddr("127.0.0.0/7")));
         message.Message.Should().Be("prefix size is too small: 126.0.0.0/7");
     }
     
@@ -170,7 +170,7 @@ public class CidrTests
     public void CantAllocateIpWithDifferntPrefix()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/8"));
-        var message = Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr(new IpAddr("255.0.0.0/8"), "test"));
+        var message = Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr("test", new IpAddr("255.0.0.0/8")));
         message.Message.Should().Be("IP prefix does not match the root IP prefix: 255.0.0.0/8");
     }
     
@@ -178,7 +178,7 @@ public class CidrTests
     public void CantAllocateRootIp()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/8"));
-        var message = Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr(new IpAddr("255.0.0.0/8"), "test"));
+        var message = Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr("test", new IpAddr("255.0.0.0/8")));
         message.Message.Should().Be("IP prefix does not match the root IP prefix: 255.0.0.0/8");
     }
 
@@ -186,7 +186,7 @@ public class CidrTests
     public void CanAllocateRootIp()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/8"));
-        var result = cidr.AllocateCidr(new IpAddr("127.0.0.0/8"), "test1");
+        var result = cidr.AllocateCidr("test1", new IpAddr("127.0.0.0/8"));
         result.ToString().Should().Be("127.0.0.0/8");
     }
     
@@ -194,7 +194,7 @@ public class CidrTests
     public void CanAllocateNestedIp()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/8"));
-        var result = cidr.AllocateCidr(new IpAddr("127.35.0.0/16"), "test1");
+        var result = cidr.AllocateCidr("test1", new IpAddr("127.35.0.0/16"));
         result.ToString().Should().Be("127.35.0.0/16");
         var state = cidr.GetState();
         state.Reserved.Should().ContainKey("test1").WhoseValue.Should().Be("127.35.0.0/16");
@@ -204,8 +204,8 @@ public class CidrTests
     public void CantAllocateAlreadyReservedIp()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/8"));
-        cidr.AllocateCidr(new IpAddr("127.35.0.0/16"), "test1");
-        var message = Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr(new IpAddr("127.35.0.0/16"), "test2"));
+        cidr.AllocateCidr("test1", new IpAddr("127.35.0.0/16"));
+        var message = Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr("test2", new IpAddr("127.35.0.0/16")));
         message.Message.Should().Be("the requested reservation 127.35.0.0/16 conflicts with 127.35.0.0/16");
     }
     
@@ -213,8 +213,8 @@ public class CidrTests
     public void CantAllocateAlreadyReservedIp2()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/8"));
-        cidr.AllocateCidr(new IpAddr("127.35.0.0/16"), "test1");
-        var message = Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr(new IpAddr("127.32.0.0/12"), "test2"));
+        cidr.AllocateCidr("test1", new IpAddr("127.35.0.0/16"));
+        var message = Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr("test2", new IpAddr("127.32.0.0/12")));
         message.Message.Should().Be("the requested reservation 127.32.0.0/12 conflicts with 127.35.0.0/16");
     }
 
@@ -222,8 +222,8 @@ public class CidrTests
     public void CanGetState()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/8"));
-        var ip1 = cidr.AllocateCidr(8, "test1");
-        var ip2 = cidr.AllocateCidr(8, "test2");
+        var ip1 = cidr.AllocateCidr("test1", 8);
+        var ip2 = cidr.AllocateCidr("test2", 8);
 
         var state = cidr.GetState();
         state.Reserved.Should().HaveCount(2);
@@ -235,8 +235,8 @@ public class CidrTests
     public void CanLoadFromState()
     {
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/8"));
-        var ip1 = cidr.AllocateCidr(8, "test1");
-        var ip2 = cidr.AllocateCidr(8, "test2");
+        var ip1 = cidr.AllocateCidr("test1", 8);
+        var ip2 = cidr.AllocateCidr("test2", 8);
 
         var state = new CidrState();
         state.Pool = "127.0.0.0/8";
@@ -258,10 +258,10 @@ public class CidrTests
         var cidr = new CidrTrie(new IpAddr("127.0.0.0/24"));
         for (int x = 0; x < 16; x++)
         {
-            var ip = cidr.AllocateCidr(4, $"test{x}");
+            var ip = cidr.AllocateCidr($"test{x}", 4);
         }
 
-        var message = Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr(4, "sdf"));
+        var message = Assert.ThrowsException<BusinessException>(() => cidr.AllocateCidr("sdf", 4));
         message.Message.Should().Be("couldn't find a suitable CIDR block");
     }
 }

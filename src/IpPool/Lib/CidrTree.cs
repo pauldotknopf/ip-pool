@@ -5,25 +5,23 @@ using Spectre.Console.Rendering;
 
 #pragma warning disable CS8629 // Nullable value type may be null.
 // ReSharper disable ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-
+// ReSharper disable PossibleInvalidOperationException
 namespace IpPool.Lib;
 
 public class CidrTrie
 {
-    private TrieNode _root;
-    private int _rootMask;
-    private readonly IpAddr _rootIp;
-    
-    public IpAddr RootIp => _rootIp;
-    
+    private readonly TrieNode _root;
+
+    public IpAddr RootIp { get; }
+
     public CidrTrie(IpAddr rootIp)
     {
         if (!rootIp.PrefixSize.HasValue)
         {
             throw new ArgumentOutOfRangeException(nameof(rootIp));
         }
-        _rootIp = rootIp;
-        _root = new TrieNode(0, 32 - _rootIp.PrefixSize.Value);
+        RootIp = rootIp;
+        _root = new TrieNode(0, 32 - RootIp.PrefixSize.Value);
     }
 
     public static CidrTrie FromState(CidrState state)
@@ -34,32 +32,32 @@ public class CidrTrie
         {
             foreach (var reserved in state.Reserved)
             {
-                trie.AllocateCidr(new IpAddr(reserved.Value), reserved.Key);
+                trie.AllocateCidr(reserved.Key, new IpAddr(reserved.Value));
             }
         }
         
         return trie;
     }
     
-    public IpAddr AllocateCidr(IpAddr ip, string key)
+    public IpAddr AllocateCidr(string key, IpAddr ip)
     {
         if (!ip.PrefixSize.HasValue)
         {
             throw new BusinessException($"prefix size is required: {ip}");
         }
-        if(ip.PrefixSize.Value < _rootIp.PrefixSize.Value)
+        if(ip.PrefixSize.Value < RootIp.PrefixSize.Value)
         {
             throw new BusinessException($"prefix size is too small: {ip}");
         }
         
         // Ensure the ip.Value prefix matches the prefix of _rootIp
-        uint mask = uint.MaxValue << (32 - _rootIp.PrefixSize.Value);
-        if ((ip.Value & mask) != (_rootIp.Value & mask))
+        uint mask = uint.MaxValue << (32 - RootIp.PrefixSize.Value);
+        if ((ip.Value & mask) != (RootIp.Value & mask))
         {
             throw new BusinessException($"IP prefix does not match the root IP prefix: {ip}");
         }
 
-        var bitsToWalk = ip.PrefixSize - _rootIp.PrefixSize;
+        var bitsToWalk = ip.PrefixSize - RootIp.PrefixSize;
         
         var currentNode = _root;
 
@@ -69,7 +67,7 @@ public class CidrTrie
             {
                 throw new Exception("already reserved");
             }
-            uint bit = (ip.Value >> (31 - (_rootIp.PrefixSize.Value + i))) & 1;
+            uint bit = (ip.Value >> (31 - (RootIp.PrefixSize.Value + i))) & 1;
             if (!currentNode.Children.ContainsKey((byte)bit))
             {
                 currentNode.Children[(byte)bit] = new TrieNode((byte)bit, currentNode.MaskSize - 1)
@@ -103,9 +101,9 @@ public class CidrTrie
         return ToIp(currentNode);
     }
     
-    public IpAddr AllocateCidr(int size, string key)
+    public IpAddr AllocateCidr(string key, int size)
     {
-        if (size > (32 - _rootIp.PrefixSize))
+        if (size > (32 - RootIp.PrefixSize))
         {
             throw new BusinessException("requested size is too big");
         }
@@ -235,16 +233,16 @@ public class CidrTrie
             reservedIp = (reservedIp << 1) | bits[x];
         }
 
-        reservedIp <<= ((32 - _rootIp.PrefixSize.Value) - bits.Count);
+        reservedIp <<= ((32 - RootIp.PrefixSize.Value) - bits.Count);
             
-        return new IpAddr(_rootIp.Value | reservedIp, 32 - node.MaskSize);
+        return new IpAddr(RootIp.Value | reservedIp, 32 - node.MaskSize);
     }
 
     public CidrState GetState()
     {
         var state = new CidrState
         {
-            Pool = _rootIp.ToString(),
+            Pool = RootIp.ToString(),
             Reserved = new Dictionary<string, string>()
         };
 

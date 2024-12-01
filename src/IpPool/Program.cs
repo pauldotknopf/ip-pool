@@ -5,7 +5,7 @@ using IpPool.Lib;
 
 public class Program
 {
-    private static void SaveState(string stateFile, CidrState state)
+    private static void SaveState(string stateFile, IpEnvironmentState state)
     {
         if (File.Exists(stateFile))
         {
@@ -33,19 +33,19 @@ public class Program
         }
     }
     
-    private static CidrTrie LoadState(string stateFile)
+    private static IpEnvironment LoadState(string stateFile)
     {
         if (!File.Exists(stateFile))
         {
             throw new BusinessException($"state file {stateFile} doesn't exist");
         }
 
-        var state = JsonSerializer.Deserialize<CidrState>(File.ReadAllText(stateFile),
+        var state = JsonSerializer.Deserialize<IpEnvironmentState>(File.ReadAllText(stateFile),
             new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
-        return CidrTrie.FromState(state);
+        return IpEnvironment.FromState(state);
     }
     
     public static async Task Main(string[] args)
@@ -58,6 +58,21 @@ public class Program
         {
             IsRequired = true
         };
+        
+        var key = new Option<string>
+            (name: "--key",
+            description: "the key to use for the reservation")
+        {
+            IsRequired = true
+        };
+
+        var ip = new Option<string>
+            (name: "--ip",
+            description: "the ip (in CIDR notation) to reserve");
+        
+        var size = new Option<int?>
+            (name: "--size",
+            description: "the size of the CIDR to reserve");
 
         {
             var pool = new Option<string>
@@ -74,8 +89,8 @@ public class Program
             {
                 try
                 {
-                    var cidr = new CidrTrie(new IpAddr(poolValue));
-                    SaveState(stateFileValue, cidr.GetState());
+                    var env = new IpEnvironment(new IpAddr(poolValue));
+                    SaveState(stateFileValue, env.ToState());
                 }
                 catch (Exception ex)
                 {
@@ -84,92 +99,87 @@ public class Program
             }, stateFileLocation, pool);
             rootCommand.Add(createPoolCommand);
         }
-        
-        {
-            var size = new Option<int>
-                (name: "--size",
-                description: "the size of the CIDR to reserve")
-            {
-                IsRequired = true
-            };
-            var key = new Option<string>
-                (name: "--key",
-                description: "the key to use for the reservation")
-            {
-                IsRequired = true
-            };
-            
-            var reserveSizeCommand = new Command("reserve-size");
-            reserveSizeCommand.AddOption(stateFileLocation);
-            reserveSizeCommand.AddOption(size);
-            reserveSizeCommand.AddOption(key);
-            reserveSizeCommand.SetHandler((stateFileValue, sizeValue, keyValue) =>
-            {
-                try
-                {
-                    var pool = LoadState(stateFileValue);
-                    var reserved = pool.AllocateCidr(sizeValue, keyValue);
-                    Console.WriteLine("reserved: " + reserved);
-                    SaveState(stateFileValue, pool.GetState());
-                }
-                catch (Exception ex)
-                {
-                    PrintException(ex);
-                }
-            }, stateFileLocation, size, key);
-            rootCommand.Add(reserveSizeCommand);
-        }
 
         {
-            var ip = new Option<string>
-                (name: "--ip",
-                description: "the ip (in CIDR notation) to reserve")
-            {
-                IsRequired = true
-            };
-            var key = new Option<string>
-                (name: "--key",
-                description: "the key to use for the reservation")
-            {
-                IsRequired = true
-            };
-            
-            var reserveIpCommand = new Command("reserve-ip");
-            reserveIpCommand.AddOption(stateFileLocation);
-            reserveIpCommand.AddOption(ip);
-            reserveIpCommand.AddOption(key);
-            reserveIpCommand.SetHandler((stateFileValue, ipValue, keyValue) =>
+            var reserveVnetCommand = new Command("reserve-vnet");
+            reserveVnetCommand.AddOption(stateFileLocation);
+            reserveVnetCommand.AddOption(ip);
+            reserveVnetCommand.AddOption(size);
+            reserveVnetCommand.AddOption(key);
+            reserveVnetCommand.SetHandler((stateFileValue, keyValue, ipValue, sizeValue) =>
             {
                 try
                 {
-                    var pool = LoadState(stateFileValue);
-                    var reserved = pool.AllocateCidr(new IpAddr(ipValue), keyValue);
-                    Console.WriteLine("reserved: " + reserved);
-                    SaveState(stateFileValue, pool.GetState());
+                    var env = LoadState(stateFileValue);
+                    IpEnvironment.VirtualNetwork vnet;
+                    if (sizeValue.HasValue)
+                    {
+                        vnet = env.AddVirtualNetwork(keyValue, sizeValue.Value);
+                    }
+                    else
+                    {
+                        vnet = env.AddVirtualNetwork(keyValue, new IpAddr(ipValue));
+                    }
+                    Console.WriteLine("reserved: " + vnet.Root.RootIp);
+                    SaveState(stateFileValue, env.ToState());
                 }
                 catch (Exception ex)
                 {
                     PrintException(ex);
                 }
-            }, stateFileLocation, ip, key);
-            rootCommand.Add(reserveIpCommand);
+            }, stateFileLocation, key, ip, size);
+            rootCommand.Add(reserveVnetCommand);
         }
         
         {
-            var prefix = new Option<string>
-                (name: "--prefix",
-                description: "the prefix to add to all the local variables")
+            var vnetKey = new Option<string>
+            (name: "--vnet-key")
+            {
+                IsRequired = true
+            };
+            
+            var reserveSubnetCommand = new Command("reserve-subnet");
+            reserveSubnetCommand.AddOption(stateFileLocation);
+            reserveSubnetCommand.AddOption(vnetKey);
+            reserveSubnetCommand.AddOption(size);
+            reserveSubnetCommand.AddOption(key);
+            reserveSubnetCommand.AddOption(ip);
+            reserveSubnetCommand.SetHandler((stateFileValue, vnetKeyValue, keyValue, ipValue, sizeValue) =>
+            {
+                try
+                {
+                    var env = LoadState(stateFileValue);
+                    var vnet = env.GetVirtualNetworkByKey(vnetKeyValue);
+                    var snet = sizeValue.HasValue 
+                        ? vnet.AddSubnet(keyValue, sizeValue.Value) 
+                        : vnet.AddSubnet(keyValue, new IpAddr(ipValue));
+                    Console.WriteLine("reservedd: " + snet.AddressSpace);
+                    SaveState(stateFileValue, env.ToState());
+                }
+                catch (Exception ex)
+                {
+                    PrintException(ex);
+                }
+            }, stateFileLocation, vnetKey, key, ip, size);
+            rootCommand.Add(reserveSubnetCommand);
+        }
+        
+        {
+            var variableName = new Option<string>
+                (name: "--variable-name",
+                description: "the tf variable name to put the ip addresses")
             {
                 IsRequired = true
             };
             
             var generateTfCommand = new Command("generate-tf");
             generateTfCommand.AddOption(stateFileLocation);
-            generateTfCommand.SetHandler((stateFileValue, prefixValue) =>
+            generateTfCommand.AddOption(variableName);
+            generateTfCommand.SetHandler((stateFileValue, variableName) =>
             {
                 try
                 {
-                    var pool = LoadState(stateFileValue).GetState();
+                    var env = LoadState(stateFileValue).ToState();
                     
                     var tfFile = Path.ChangeExtension(stateFileValue, ".tf");
                     if (Path.Exists(tfFile))
@@ -179,24 +189,31 @@ public class Program
 
                     var builder = new StringBuilder();
                     builder.AppendLine("locals {");
-                    foreach (var reserved in pool.Reserved)
+                    builder.AppendLine($"\t{variableName} = {{");
+                    foreach (var vnet in env.VirtualNetworks)
                     {
-                        var key = reserved.Key;
-                        if (!string.IsNullOrEmpty(prefixValue))
+                        builder.AppendLine($"\t\t{vnet.Key} = {{");
+                        builder.AppendLine($"\t\t\taddress_space = \"{vnet.Value.AddressSpace}\"");
+                        builder.AppendLine($"\t\t\tsubnets = {{");
+                        foreach (var subnet in vnet.Value.Subnets)
                         {
-                            key = $"{prefixValue}{key}";
+                            builder.AppendLine($"\t\t\t\t{subnet.Key} = {{");
+                            builder.AppendLine($"\t\t\t\taddress_space = \"{subnet.Value.AddressSpace}\"");
+                            builder.AppendLine("\t\t\t\t}");
                         }
-                        builder.AppendLine($"\t{key} = \"{reserved.Value}\"");
+                        builder.AppendLine("\t\t\t}");
+                        builder.AppendLine("\t\t}");
                     }
+                    builder.AppendLine("\t}");
                     builder.AppendLine("}");
-
+                    
                     File.WriteAllText(tfFile, builder.ToString());
                 }
                 catch (Exception ex)
                 {
                     PrintException(ex);
                 }
-            }, stateFileLocation, prefix);
+            }, stateFileLocation, variableName);
             rootCommand.Add(generateTfCommand);
         }
         
