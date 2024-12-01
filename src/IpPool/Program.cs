@@ -198,7 +198,7 @@ public class Program
                         foreach (var subnet in vnet.Value.Subnets)
                         {
                             builder.AppendLine($"\t\t\t\t{subnet.Key} = {{");
-                            builder.AppendLine($"\t\t\t\taddress_space = \"{subnet.Value.AddressSpace}\"");
+                            builder.AppendLine($"\t\t\t\t\taddress_space = \"{subnet.Value.AddressSpace}\"");
                             builder.AppendLine("\t\t\t\t}");
                         }
                         builder.AppendLine("\t\t\t}");
