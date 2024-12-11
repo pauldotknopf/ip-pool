@@ -153,7 +153,7 @@ public class Program
                     var snet = sizeValue.HasValue 
                         ? vnet.AddSubnet(keyValue, sizeValue.Value) 
                         : vnet.AddSubnet(keyValue, new IpAddr(ipValue));
-                    Console.WriteLine("reservedd: " + snet.AddressSpace);
+                    Console.WriteLine("reserved: " + snet.AddressSpace);
                     SaveState(stateFileValue, env.ToState());
                 }
                 catch (Exception ex)

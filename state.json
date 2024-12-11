@@ -1,0 +1,27 @@
+{
+  "addressSpace": "127.0.0.0/8",
+  "virtualNetworks": {
+    "region1": {
+      "addressSpace": "127.0.0.0/10",
+      "subnets": {
+        "my-snet1": {
+          "addressSpace": "127.0.0.0/24"
+        },
+        "my-snet2": {
+          "addressSpace": "127.0.1.0/24"
+        }
+      }
+    },
+    "region2": {
+      "addressSpace": "127.64.0.0/10",
+      "subnets": {
+        "my-snet1": {
+          "addressSpace": "127.64.0.0/24"
+        },
+        "my-snet2": {
+          "addressSpace": "127.64.1.0/24"
+        }
+      }
+    }
+  }
+}
