@@ -2,6 +2,11 @@
 
 A tool to manage/reserve IPs (CIDR notated) from an address space (pool).
 
+**Goals:**
+* Trivial request address spaces without worrying about CIDR collisions.
+* Prevent fragmentation, internally uses trie structures to ensure no holes in address space.
+* *Future*: Resize address space, and defragment/reorder, with minimal changes necessary (maybe cycle-sort).
+
 # Installation
 
 ```bash
