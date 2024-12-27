@@ -117,7 +117,7 @@ public class CidrTrie
                 return null;
             }
 
-            if (node.MaskSize == size)
+            if (node.MaskSize == size && !HasReservedChildren(node))
             {
                 return node;
             }
@@ -163,6 +163,24 @@ public class CidrTrie
         }
 
         throw new BusinessException("couldn't find a suitable CIDR block");
+    }
+
+    private bool HasReservedChildren(TrieNode node)
+    {
+        foreach (var child in node.Children)
+        {
+            if (child.Value.IsReserved)
+            {
+                return true;
+            }
+
+            if (HasReservedChildren(child.Value))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private string EnsureValidKey(string key)

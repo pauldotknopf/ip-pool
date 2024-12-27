@@ -4,6 +4,13 @@ namespace IpPool.Lib;
 public class IpEnvironment(IpAddr addressSpace)
 {
     private readonly CidrTrie _root = new(addressSpace);
+
+    public string DebugOutput()
+    {
+        return _root.DebugOutput();
+    }
+
+    public IpAddr AddressSpace => _root.RootIp;
     
     public List<VirtualNetwork> VirtualNetworks { get; set; } = new List<VirtualNetwork>();
 
@@ -36,9 +43,16 @@ public class IpEnvironment(IpAddr addressSpace)
     public class VirtualNetwork(string key, IpAddr addressSpace)
     {
         public string Key { get; } = key;
+
+        public IpAddr AddressSpace => Root.RootIp;
         
         public CidrTrie Root = new CidrTrie(addressSpace);
 
+        public string DebugOutput()
+        {
+            return Root.DebugOutput();
+        }
+        
         public List<Subnet> Subnets { get; set; } = new List<Subnet>();
         
         public Subnet AddSubnet(string key, IpAddr ip)
